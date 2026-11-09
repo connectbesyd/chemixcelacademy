@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Remove background — Chemixcel tool</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #070b14; color: #e8edf8; margin: 0; padding: 2rem; text-align: center; }
+  .row { display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem; }
+  figure { margin: 0; } img { max-width: 360px; width: 100%; border-radius: 12px; }
+  .checker { background: repeating-conic-gradient(#222 0 25%, #333 0 50%) 0 0/20px 20px; border-radius: 12px; }
+  a.dl, button { display: inline-block; margin-top: 1rem; padding: .8rem 1.6rem; border-radius: 99px; background: #2f6bff; color: #fff; border: 0; font-size: 1rem; text-decoration: none; cursor: pointer; }
+  #status { color: #9aa7c2; margin-top: 1rem; }
+</style>
+</head>
+<body>
+<h1>Background remover</h1>
+<p>Processes <code>img/revanth.png</code> in your browser (first run downloads the AI model, ~40&nbsp;MB). Nothing is uploaded to a server.</p>
+<p>Or choose another photo: <input type="file" id="file" accept="image/*"></p>
+<p id="status">Starting…</p>
+<div class="row">
+  <figure><figcaption>Original</figcaption><img id="orig" alt=""></figure>
+  <figure><figcaption>Result</figcaption><div class="checker"><img id="out" alt=""></div></figure>
+</div>
+<a id="dl" class="dl" download="revanth-cutout.png" hidden>Download PNG</a>
+<p id="hint" hidden>Save the downloaded file over <code>img/revanth.png</code> — the website will pick it up automatically.</p>
+
+<script type="module">
+import { removeBackground } from "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/+esm";
+const $ = (id) => document.getElementById(id);
+async function run(blob) {
+  $("orig").src = URL.createObjectURL(blob);
+  $("status").textContent = "Removing background… (first run is slow while the model downloads)";
+  try {
+    const out = await removeBackground(blob, { progress: (k, c, t) => { $("status").textContent = `Loading ${k}: ${Math.round((c / t) * 100)}%`; } });
+    const url = URL.createObjectURL(out);
+    $("out").src = url; $("dl").href = url; $("dl").hidden = false; $("hint").hidden = false;
+    $("status").textContent = "Done.";
+  } catch (e) { $("status").textContent = "Failed: " + e.message; }
+}
+$("file").addEventListener("change", (e) => e.target.files[0] && run(e.target.files[0]));
+fetch("../img/revanth.png").then((r) => r.blob()).then(run).catch((e) => ($("status").textContent = "Couldn't load img/revanth.png — use the file picker. " + e.message));
+</script>
+</body>
+</html>
